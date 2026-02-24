@@ -1,0 +1,149 @@
+/* --- AuraCode Design Tokens --- */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+
+:root {
+    --bg-main: #09090b;
+    --bg-nav: rgba(9, 9, 11, 0.85);
+    --bg-sidebar: #0c0c0e;
+    --bg-editor: #0c0c0e;
+    --bg-terminal: #000000;
+    --border-color: #27272a;
+    --accent-blue: #3b82f6;
+    --accent-indigo: #6366f1;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --safe-area-top: env(safe-area-inset-top);
+    --safe-area-bottom: env(safe-area-inset-bottom);
+}
+
+/* --- Base Normalization --- */
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* --- Workspace Layout --- */
+.h-screen {
+    height: 100vh;
+    height: 100dvh;
+}
+
+/* --- Code Editor Styles --- */
+#code-canvas {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-variant-ligatures: contextual;
+    tab-size: 4;
+    caret-color: var(--accent-blue);
+    resize: none;
+    background: transparent;
+}
+
+#editor-gutter {
+    background-color: rgba(9, 9, 11, 0.3);
+    border-right: 1px solid var(--border-color);
+}
+
+/* --- Terminal Customization --- */
+#terminal-stream {
+    scrollbar-gutter: stable;
+}
+
+#terminal-stream::-webkit-scrollbar {
+    width: 5px;
+}
+
+#terminal-stream::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#terminal-stream::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 10px;
+}
+
+#terminal-stream::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+}
+
+/* --- Terminal Content Classes --- */
+.term-success { color: #10b981; }
+.term-error { color: #ef4444; }
+.term-info { color: #3b82f6; }
+.term-command { color: #ffffff; font-weight: 600; }
+.term-dim { color: #52525b; font-style: italic; }
+
+/* --- Animations & Interactions --- */
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); filter: blur(10px); }
+    to { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+.scale-in {
+    animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pulse-red {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.mic-active {
+    color: #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    animation: pulse-red 1.5s infinite ease-in-out;
+}
+
+/* --- PWA Component Styles --- */
+.glass-panel {
+    background: var(--bg-nav);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 640px) {
+    #code-canvas {
+        padding: 1.5rem !important;
+        font-size: 14px;
+    }
+
+    #editor-gutter {
+        display: none; /* Hide gutter on small mobile screens to save space */
+    }
+
+    #aura-terminal {
+        height: 45vh; /* Larger terminal on mobile for easier input */
+    }
+
+    aside {
+        width: 3.5rem;
+    }
+}
+
+/* --- Execution Button Glow --- */
+.btn-run-active {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-run-active:active {
+    transform: translateY(1px);
+}
+
+/* --- Highlighting Overrides --- */
+.hljs {
+    background: transparent !important;
+    padding: 0 !important;
+}
