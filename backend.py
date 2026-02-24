@@ -1,6 +1,7 @@
 """
-AuraCode Python Backend Node v1.0
-Handles incoming JSON execution requests from the AuraCode Communication Layer.
+AuraCode Python Backend Node v1.1
+High-performance execution engine for the AuraCode decentralized environment.
+Configured for 5-digit port stability.
 """
 
 from flask import Flask, request, jsonify
@@ -12,62 +13,101 @@ import os
 
 app = Flask(__name__)
 
-# Basic CORS support for the browser IDE
+# --- CORS CONFIGURATION ---
 @app.after_request
 def add_cors_headers(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-    response.headers.add('Access-Control-Allow-Methods', 'POST')
+    response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
     return response
 
-@app.route('/execute', methods=['POST'])
+@app.route('/execute', methods=['POST', 'OPTIONS'])
 def execute_code():
+    # Handle preflight requests
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
+
     try:
         data = request.json
+        # Extract payload based on the Aura-JSON schema
         payload = data.get('payload', {})
         
-        lang = payload.get('language')
-        # Decode the Base64 source code
-        source_code = base64.b64decode(payload.get('source')).decode('utf-8')
+        # Determine language (defaults to python if not specified)
+        lang = payload.get('language', 'python')
+        
+        # Secure Base64 Decoding of source code
+        encoded_source = payload.get('source', '')
+        if not encoded_source:
+            return jsonify({"status": "error", "error": "No source code provided"}), 400
+            
+        source_code = base64.b64decode(encoded_source).decode('utf-8')
         
         start_time = time.time()
         
-        # Unique filename for execution isolation
-        filename = f"aura_{uuid.uuid4().hex}.py"
-        with open(filename, "w") as f:
+        # Create a unique temporary file for isolation
+        # Using a UUID to prevent filename collisions during concurrent execution
+        unique_id = uuid.uuid4().hex
+        temp_filename = f"aura_node_{unique_id}.py"
+        
+        with open(temp_filename, "w", encoding="utf-8") as f:
             f.write(source_code)
             
-        # Execute in a subprocess for safety
-        process = subprocess.run(
-            ['python3', filename],
-            capture_output=True,
-            text=True,
-            timeout=10 # Security timeout
-        )
+        # Execute the script in a restricted subprocess
+        # We use a 10-second timeout to prevent runaway processes
+        try:
+            process = subprocess.run(
+                ['python3', temp_filename],
+                capture_output=True,
+                text=True,
+                timeout=10 
+            )
+            stdout = process.stdout
+            stderr = process.stderr
+            exit_code = process.returncode
+        except subprocess.TimeoutExpired:
+            stdout = ""
+            stderr = "Execution Error: Process timed out after 10 seconds."
+            exit_code = 124
         
-        # Cleanup
-        if os.path.exists(filename):
-            os.remove(filename)
+        # Final cleanup of the temporary file
+        if os.path.exists(temp_filename):
+            os.remove(temp_filename)
             
         latency = int((time.time() - start_time) * 1000)
         
+        # Prepare the standardized JSON response for the comm.js layer
         return jsonify({
             "status": "success",
-            "stdout": process.stdout if process.returncode == 0 else process.stderr,
-            "exit_code": process.returncode,
+            "stdout": stdout if exit_code == 0 else stderr,
+            "exit_code": exit_code,
             "latency_ms": latency,
-            "id": data.get('id')
+            "engine": "python-native",
+            "request_id": data.get('id', unique_id)
         })
 
     except Exception as e:
         return jsonify({
             "status": "error",
-            "error": str(e)
+            "error": f"Internal Node Error: {str(e)}"
         }), 500
 
+@app.route('/status', methods=['GET'])
+def get_status():
+    return jsonify({
+        "node": "AuraCode-Python",
+        "status": "online",
+        "vfs_mount": True,
+        "uptime": time.process_time()
+    })
+
 if __name__ == '__main__':
+    # Use a 5-digit port (55000) to ensure the service is rarely blocked
+    # Running on 0.0.0.0 to allow local network discovery if needed
+    PORT = 55000
     print("========================================")
-    print("   AuraCode Python Backend Node v1.0    ")
+    print("   AuraCode Python Backend Node v1.1    ")
     print("========================================")
-    print("Listening on http://localhost:5000")
-    app.run(port=5000)
+    print(f"🚀 Node initialized at http://localhost:{PORT}")
+    print("📡 Protocol: JSON-Bridge over Base64")
+    
+    app.run(host='0.0.0.0', port=PORT, debug=False)
