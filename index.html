@@ -40,9 +40,12 @@
                     </p>
                 </div>
             </div>
-            <button id="mount-btn" onclick="AuraSystem.mount()" class="w-full py-4 bg-white text-black font-black rounded-2xl hover:bg-zinc-200 transition-all uppercase text-xs tracking-widest active:scale-95">
-                Mount Environment & Continue
-            </button>
+            <div id="mount-controls">
+                <button id="mount-btn" class="w-full py-4 bg-white text-black font-black rounded-2xl hover:bg-zinc-200 transition-all uppercase text-xs tracking-widest active:scale-95">
+                    Mount Environment & Continue
+                </button>
+                <div id="mount-progress" class="text-xs text-zinc-400 mt-3 hidden">Initializing...</div>
+            </div>
         </div>
     </div>
 
@@ -167,6 +170,36 @@
                 overlay.querySelector('h2').innerText = 'Desktop Recommended';
                 overlay.querySelector('.space-y-4').innerHTML = `<p class="text-zinc-400">AuraCode's full virtual node experience requires a desktop browser for reliable execution and local storage. Please open this site on a desktop device. Your privacy and execution fidelity are best on desktop.</p>`;
             }
+        })();
+
+        // Robust mount button handler: show progress, disable while mounting, and call AuraSystem.mount()
+        (function wireMountButton() {
+            const btn = document.getElementById('mount-btn');
+            const progress = document.getElementById('mount-progress');
+            if (!btn) return;
+            btn.addEventListener('click', async function () {
+                if (btn.disabled) return;
+                btn.disabled = true;
+                btn.classList.add('opacity-40', 'cursor-not-allowed');
+                if (progress) { progress.style.display = 'block'; progress.innerText = 'Mounting environment...'; }
+                try {
+                    if (typeof AuraSystem?.mount === 'function') {
+                        await AuraSystem.mount();
+                    } else {
+                        console.error('AuraSystem.mount not available');
+                        if (progress) progress.innerText = 'Mount function missing.';
+                    }
+                } catch (e) {
+                    console.error('Mount error', e);
+                    if (progress) progress.innerText = 'Mount failed: ' + (e?.message || e);
+                } finally {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-40', 'cursor-not-allowed');
+                    if (progress && !document.getElementById('startup-overlay')?.style.display === 'none') {
+                        // keep message visible
+                    }
+                }
+            });
         })();
     </script>
 </body>
