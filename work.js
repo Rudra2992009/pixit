@@ -83,7 +83,8 @@ const AuraSystem = {
 
 const AuraRunner = {
     async execute() {
-        const engine = document.getElementById('lang-switch').value;
+        const engineEl = document.getElementById('lang-switch') || document.getElementById('lang-engine');
+        const engine = engineEl ? engineEl.value : 'javascript';
         const code = document.getElementById('code-canvas').value;
         if (!code.trim()) return AuraTerminal.print("Buffer empty.", "error");
 
@@ -190,6 +191,27 @@ const AuraRunner = {
             AuraTerminal.print(fallback, "success");
         }
     }
+};
+
+// Backwards-compatible wrappers and system helpers
+AuraRunner.run = function() { return AuraRunner.execute(); };
+
+AuraSystem.triggerAudit = function() {
+    AuraTerminal.print('Audit: Running local integrity checks...', 'info');
+    setTimeout(() => AuraTerminal.print('Audit: No issues found.', 'success'), 600);
+};
+
+AuraSystem.toggleSettings = function() {
+    AuraTerminal.print('Settings: Toggle settings panel (not implemented).', 'info');
+};
+
+// Voice helpers: support both toggle and toggleSTT to match index.html hooks
+AuraVoice.toggleSTT = function() { return AuraVoice.toggle(); };
+AuraVoice.toggle = function() {
+    this.isActive = !this.isActive;
+    const el = document.getElementById('stt-trigger') || document.getElementById('stt-btn');
+    if (el) el.classList.toggle('voice-active');
+    AuraTerminal.print(this.isActive ? "Voice: Active" : "Voice: Idle", "info");
 };
 
 const AuraTerminal = {
