@@ -62,12 +62,30 @@ const AuraComm = {
      * Processes the JSON response from the backend nodes
      */
     handleResponse(data) {
-        if (data.status === "success") {
-            Terminal.print(`Node Response: [Exit 0] [${data.latency_ms}ms]`, "success");
-            return { success: true, output: data.stdout };
-        } else {
-            Terminal.print(`Node Exception: ${data.error}`, "error");
-            return { success: false, error: data.error };
+        // Normalize responses to the standardized schema: { stdout, exit_code, latency_ms }
+        try {
+            if (data && typeof data === 'object') {
+                // Standardized backend response
+                if ('stdout' in data && 'exit_code' in data) {
+                    const ok = Number(data.exit_code) === 0;
+                    Terminal.print(`Node Response: [Exit ${data.exit_code}] [${data.latency_ms ?? 0}ms]`, ok ? "success" : "error");
+                    return { success: ok, output: data.stdout, exit_code: data.exit_code, latency_ms: data.latency_ms ?? 0 };
+                }
+
+                // Legacy response shape
+                if (data.status === "success") {
+                    Terminal.print(`Node Response: [Exit 0] [${data.latency_ms ?? 0}ms]`, "success");
+                    return { success: true, output: data.stdout, exit_code: 0, latency_ms: data.latency_ms ?? 0 };
+                }
+
+                // Error shapes
+                const err = data.error || data.message || 'Unknown node response';
+                Terminal.print(`Node Exception: ${err}`, "error");
+                return { success: false, error: err };
+            }
+        } catch (e) {
+            Terminal.print(`Response Parse Error: ${e.message}`, "error");
+            return { success: false, error: e.message };
         }
     }
 };
