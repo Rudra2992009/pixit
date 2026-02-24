@@ -101,13 +101,19 @@ def get_status():
     })
 
 if __name__ == '__main__':
-    # Use a 5-digit port (55000) to ensure the service is rarely blocked
-    # Running on 0.0.0.0 to allow local network discovery if needed
-    PORT = 55000
+    # Use a 5-digit port (default 55000) but allow overriding via argv[1] or PORT env var
+    import sys
+    env_port = os.environ.get('PORT')
+    if len(sys.argv) > 1:
+        try:
+            PORT = int(sys.argv[1])
+        except Exception:
+            PORT = int(env_port) if env_port else 55000
+    else:
+        PORT = int(env_port) if env_port else 55000
     print("========================================")
     print("   AuraCode Python Backend Node v1.1    ")
     print("========================================")
     print(f"🚀 Node initialized at http://localhost:{PORT}")
     print("📡 Protocol: JSON-Bridge over Base64")
-    
     app.run(host='0.0.0.0', port=PORT, debug=False)

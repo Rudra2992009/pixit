@@ -5,11 +5,11 @@
  */
 
 const AuraComm = {
-    // Configuration for local nodes
+    // Configuration for local nodes: lists of 10 preferred ports each
     nodes: {
-        cpp: "http://localhost:56000/bridge",
-        python: "http://localhost:55000/execute",
-        rust: "http://localhost:58000/bridge"
+        cpp: Array.from({length:10}, (_,i) => 56000 + i),
+        python: Array.from({length:10}, (_,i) => 55000 + i),
+        rust: Array.from({length:10}, (_,i) => 58000 + i)
     },
 
     /**
@@ -34,28 +34,46 @@ const AuraComm = {
 
         Terminal.print(`Comm: Payload ${payload.id.substring(0,8)} generated.`, "dim");
 
-        try {
-            // Determine which backend node to talk to
-            const targetUrl = this.nodes[lang] || this.nodes.python;
-            
-            Terminal.print(`Comm: Connecting to ${lang.toUpperCase()} Node...`, "info");
+        // Build list of candidate URLs based on configured ports
+        const ports = this.nodes[lang] || this.nodes.python;
+        const path = (lang === 'python') ? '/execute' : '/bridge';
 
-            const response = await fetch(targetUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+        Terminal.print(`Comm: Trying ${ports.length} ports for ${lang.toUpperCase()} node...`, "info");
 
-            if (!response.ok) throw new Error(`Node unreachable: ${response.statusText}`);
+        // Helper to attempt a POST with timeout
+        const tryPost = async (url, body, timeout = 5000) => {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            try {
+                const resp = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body), signal: controller.signal });
+                clearTimeout(id);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                return await resp.json();
+            } catch (e) {
+                clearTimeout(id);
+                throw e;
+            }
+        };
 
-            const result = await response.json();
-            return this.handleResponse(result);
-
-        } catch (error) {
-            Terminal.print(`Comm Error: ${error.message}`, "error");
-            // Fallback: If native node is down, we could trigger WASM fallback here
-            return { success: false, error: error.message };
+        // Iterate ports with simple exponential backoff
+        let attempt = 0;
+        for (const port of ports) {
+            attempt++;
+            const url = `http://localhost:${port}${path}`;
+            Terminal.print(`Comm: Attempt ${attempt} -> ${url}`, "dim");
+            try {
+                const result = await tryPost(url, payload, 4000 + attempt * 500);
+                return this.handleResponse(result);
+            } catch (err) {
+                Terminal.print(`Comm: Port ${port} failed (${err.message}).`, "dim");
+                // small delay before next try
+                await new Promise(r => setTimeout(r, 200 + attempt * 50));
+                continue;
+            }
         }
+
+        Terminal.print(`Comm Error: All ${ports.length} ports failed for ${lang.toUpperCase()}`, "error");
+        return { success: false, error: `No available ${lang} node ports` };
     },
 
     /**
