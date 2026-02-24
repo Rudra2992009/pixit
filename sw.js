@@ -16,6 +16,10 @@ const ASSETS_TO_CACHE = [
   'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js',
   'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide_py.tar',
   'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyscript.bin'
+  ,
+  // Monaco Editor loader & common assets for offline editor support
+  'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/loader.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/editor/editor.main.css'
 ];
 
 // Install Event: Synchronizing local cache with the app shell
