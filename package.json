@@ -12,7 +12,7 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
-    "start": "serve . -p 3000",
+    "start": "node start-local.js",
     "dev": "browser-sync start --server --files 'index.html, style.css, work.js' --port 3000",
     "build:cpp": "g++ bridge.cpp -o aura_bridge -lpthread -O3",
     "build:rust": "cargo build --release",
